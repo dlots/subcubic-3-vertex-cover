@@ -11,9 +11,9 @@ from collections import deque
 
 color_key = 'color'
 
+
 def generate_subcubic_graph_from_rary_tree(n_vertices):
     graph = full_rary_tree(2, n_vertices)
-
     return graph
 
 

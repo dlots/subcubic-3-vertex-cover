@@ -1,14 +1,16 @@
 from collections import deque
-from matplotlib import pyplot as plt
 from graph_utils import draw_graph
+import log
 
-class SubcubicVertexCoverP3:
+
+class SubCubicVertexCoverP3:
     def __init__(self, graph):
         self.__graph = graph
         self.__global_candidates = [0 for _ in self.__graph]
         self.__iteration_candidates = [False for _ in self.__graph]
 
     def __find_next_3_vertex_or_leaf(self, previous_vertex, current_vertex):
+        log.debug('__find_next_3_vertex_or_leaf', previous_vertex, current_vertex)
         while self.__graph.degree(current_vertex) == 2:
             for neighbor in self.__graph.neighbors(current_vertex):
                 if neighbor != previous_vertex:
@@ -18,6 +20,7 @@ class SubcubicVertexCoverP3:
         return previous_vertex, current_vertex
 
     def __find_next_3_vertex_or_leaf_with_cover(self, leaf):
+        log.debug('__find_next_3_vertex_or_leaf_with_cover', leaf)
         current_vertex = next(self.__graph.neighbors(leaf))
         previous_vertex = leaf
         path_length = 1
@@ -42,15 +45,19 @@ class SubcubicVertexCoverP3:
         return previous_vertex, current_vertex
 
     def __is_star_covered(self, center):
+        log.debug('__is_star_covered', center)
         neighbors_candidates_sum =\
             sum([self.__iteration_candidates[neighbor] for neighbor in self.__graph.neighbors(center)])
         return self.__iteration_candidates[center] or neighbors_candidates_sum >= 2, neighbors_candidates_sum
 
     def __solve_cover_for_3_vertex_and_leaf(self, center, leaf_direction):
+        log.debug('__solve_cover_for_3_vertex_and_leaf', center, leaf_direction)
         pass
 
     def __solve_cover_for_3_3_bridge(self, parent_vertex, left_center, left_bridge_side,
                                      right_bridge_side, right_center):
+        log.debug('__solve_cover_for_3_3_bridge', parent_vertex, left_center,
+                  left_bridge_side, right_bridge_side, right_center)
         # cover left star
         left_star_covered, left_neighbors_candidates_sum = self.__is_star_covered(left_center)
         if not left_star_covered:
@@ -87,11 +94,15 @@ class SubcubicVertexCoverP3:
         while current_vertex != right_bridge_side and current_vertex != right_center and previous_vertex != right_center:
             for neighbor in self.__graph.neighbors(current_vertex):
                 if neighbor != previous_vertex:
+                    log.debug('\t\t', neighbor)
                     previous_vertex = current_vertex
                     current_vertex = neighbor
                     path_length += 1
                     if path_length % 3 == 0:
                         self.__iteration_candidates[current_vertex] = True
+                    break
+        if current_vertex == right_bridge_side and path_length == 2:
+            self.__iteration_candidates[right_center] = True
 
         # cover right star
         right_star_covered, right_neighbors_candidates_sum = self.__is_star_covered(right_center)
@@ -121,16 +132,21 @@ class SubcubicVertexCoverP3:
                             break
 
     def __bfs_cover_compute(self, starting_point_parent, starting_point):
+        log.debug('__bfs_cover_compute', starting_point_parent, starting_point)
         queued = [False for _ in self.__graph]
         backtrack = [[] for _ in self.__graph]
         queue = deque()
         queue.append((starting_point_parent, starting_point))
         while len(queue) != 0:
             parent_vertex, first_vertex = queue.popleft()
+            log.debug(first_vertex)
 
             other_neighbor = None
             for neighbor in self.__graph.neighbors(first_vertex):
-                if neighbor not in backtrack[first_vertex]:
+                if neighbor in backtrack[first_vertex]:
+                    log.debug('\t', neighbor, 'visited')
+                else:
+                    log.debug('\t', neighbor, 'not visited')
                     previous_vertex, second_vertex = self.__find_next_3_vertex_or_leaf(first_vertex, neighbor)
                     backtrack[second_vertex].append(previous_vertex)
 
@@ -154,13 +170,14 @@ class SubcubicVertexCoverP3:
                         if count > 0:
                             self.__graph.nodes[vertex]['color'] = 'green'
 
-                    draw_graph(self.__graph)
+                    #  draw_graph(self.__graph)
 
                     if not queued[second_vertex]:
                         queue.append((previous_vertex, second_vertex))
                         queued[second_vertex] = True
 
     def __leaf_iteration(self, leaf):
+        log.debug('__leaf_iteration', leaf)
         self.__iteration_candidates = [False for _ in self.__graph]
         starting_point_parent, starting_point = self.__find_next_3_vertex_or_leaf_with_cover(leaf)
         self.__bfs_cover_compute(starting_point_parent, starting_point)
@@ -168,6 +185,7 @@ class SubcubicVertexCoverP3:
             self.__global_candidates[vertex] += self.__iteration_candidates[vertex]
 
     def compute(self):
+        log.debug('compute')
         self.__global_candidates = [0 for _ in self.__graph]
         self.__iteration_candidates = [False for _ in self.__graph]
         cover = []

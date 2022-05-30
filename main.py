@@ -2,9 +2,10 @@ from graph_utils import generate_subcubic_graph_from_rary_tree
 from graph_utils import generate_subcubic_graph_from_cubic_graph
 from graph_utils import generate_subcubic_graph_inside_out
 from graph_utils import draw_graph, color_key, print_degrees
-from vertex_cover_p3 import SubcubicVertexCoverP3
+from vertex_cover_p3 import SubCubicVertexCoverP3
 import queue
 from networkx import Graph
+from greedy_cubic_vertex_cover import compute_greedy_cubic_vertex_cover
 
 
 # a center vertex or any 2 vertices are enough to cover a star
@@ -94,14 +95,23 @@ if __name__ == '__main__':
             if graph.degree(vertex) == 1:
                 found = True
                 break
+    graph_greedy = graph.copy()
+
+    algorithm = SubCubicVertexCoverP3(graph)
+    cover, candidates = algorithm.compute()
+    for vertex, count in enumerate(candidates):
+        if count > 0:
+            graph.nodes[vertex][color_key] = 'green'
+    #print(cover, candidates)
+    print('my', cover, len(cover))
     draw_graph(graph)
-    # algorithm = SubcubicVertexCoverP3(graph)
-    # cover, candidates = algorithm.compute()
-    # for vertex, count in enumerate(candidates):
-    #     if count > 0:
-    #         graph.nodes[vertex][color_key] = 'green'
-    # print(cover, candidates)
-    # draw_graph(graph)
+
+    graph_greedy_backup = graph_greedy.copy()
+    cover = compute_greedy_cubic_vertex_cover(graph_greedy)
+    print('greedy', cover, len(cover))
+    for vertex in cover:
+        graph_greedy_backup.nodes[vertex][color_key] = 'green'
+    draw_graph(graph_greedy_backup)
 
     # print_degrees(graph)
     # pairs, intersections = count_intersections_bfs(graph)
