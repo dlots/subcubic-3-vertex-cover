@@ -1,7 +1,7 @@
 PRINT_DEBUG = False
 
 
-def debug(*args):
+def print(*args):
     if PRINT_DEBUG:
         for arg in args:
             print(arg, end=' ')

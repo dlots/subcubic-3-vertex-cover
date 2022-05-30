@@ -1,6 +1,6 @@
 from collections import deque
 from graph_utils import draw_graph
-import log
+import debug
 
 
 class SubCubicVertexCoverP3:
@@ -10,7 +10,7 @@ class SubCubicVertexCoverP3:
         self.__iteration_candidates = [False for _ in self.__graph]
 
     def __find_next_3_vertex_or_leaf(self, previous_vertex, current_vertex):
-        log.debug('__find_next_3_vertex_or_leaf', previous_vertex, current_vertex)
+        debug.print('__find_next_3_vertex_or_leaf', previous_vertex, current_vertex)
         while self.__graph.degree(current_vertex) == 2:
             for neighbor in self.__graph.neighbors(current_vertex):
                 if neighbor != previous_vertex:
@@ -20,7 +20,7 @@ class SubCubicVertexCoverP3:
         return previous_vertex, current_vertex
 
     def __find_next_3_vertex_or_leaf_with_cover(self, leaf):
-        log.debug('__find_next_3_vertex_or_leaf_with_cover', leaf)
+        debug.print('__find_next_3_vertex_or_leaf_with_cover', leaf)
         current_vertex = next(self.__graph.neighbors(leaf))
         previous_vertex = leaf
         path_length = 1
@@ -45,18 +45,34 @@ class SubCubicVertexCoverP3:
         return previous_vertex, current_vertex
 
     def __is_star_covered(self, center):
-        log.debug('__is_star_covered', center)
+        debug.print('__is_star_covered', center)
         neighbors_candidates_sum =\
             sum([self.__iteration_candidates[neighbor] for neighbor in self.__graph.neighbors(center)])
         return self.__iteration_candidates[center] or neighbors_candidates_sum >= 2, neighbors_candidates_sum
 
-    def __solve_cover_for_3_vertex_and_leaf(self, center, leaf_direction):
-        log.debug('__solve_cover_for_3_vertex_and_leaf', center, leaf_direction)
-        pass
+    def __solve_cover_for_3_vertex_and_stop_vertex(self, center, direction, stop):
+        debug.print('__solve_cover_for_3_vertex_and_leaf', center, direction, stop)
+        current = direction
+        previous = center
+        if self.__iteration_candidates[direction]:
+            length = 0
+        elif self.__iteration_candidates[center]:
+            length = 1
+        else:
+            length = 2
+        while current != stop:
+            for neighbor in self.__graph.neighbors(current):
+                if neighbor != previous:
+                    length += 1
+                    if length % 3 == 0:
+                        self.__iteration_candidates[neighbor] = True
+                    previous = current
+                    current = neighbor
+                    break
 
     def __solve_cover_for_3_3_bridge(self, parent_vertex, left_center, left_bridge_side,
                                      right_bridge_side, right_center):
-        log.debug('__solve_cover_for_3_3_bridge', parent_vertex, left_center,
+        debug.print('__solve_cover_for_3_3_bridge', parent_vertex, left_center,
                   left_bridge_side, right_bridge_side, right_center)
         # cover left star
         left_star_covered, left_neighbors_candidates_sum = self.__is_star_covered(left_center)
@@ -94,7 +110,7 @@ class SubCubicVertexCoverP3:
         while current_vertex != right_bridge_side and current_vertex != right_center and previous_vertex != right_center:
             for neighbor in self.__graph.neighbors(current_vertex):
                 if neighbor != previous_vertex:
-                    log.debug('\t\t', neighbor)
+                    debug.print('\t\t', neighbor)
                     previous_vertex = current_vertex
                     current_vertex = neighbor
                     path_length += 1
@@ -132,52 +148,60 @@ class SubCubicVertexCoverP3:
                             break
 
     def __bfs_cover_compute(self, starting_point_parent, starting_point):
-        log.debug('__bfs_cover_compute', starting_point_parent, starting_point)
+        debug.print('__bfs_cover_compute', starting_point_parent, starting_point)
         queued = [False for _ in self.__graph]
         backtrack = [[] for _ in self.__graph]
         queue = deque()
         queue.append((starting_point_parent, starting_point))
         while len(queue) != 0:
+            leaf_cycle = False
             parent_vertex, first_vertex = queue.popleft()
-            log.debug(first_vertex)
+            debug.print(first_vertex)
 
             other_neighbor = None
             for neighbor in self.__graph.neighbors(first_vertex):
-                if neighbor in backtrack[first_vertex]:
-                    log.debug('\t', neighbor, 'visited')
+                if leaf_cycle or neighbor in backtrack[first_vertex]:
+                    debug.print('\t', neighbor, 'visited')
                 else:
-                    log.debug('\t', neighbor, 'not visited')
+                    debug.print('\t', neighbor, 'not visited')
                     previous_vertex, second_vertex = self.__find_next_3_vertex_or_leaf(first_vertex, neighbor)
                     backtrack[second_vertex].append(previous_vertex)
 
                     # corner cases (special handling needed when solving for cover)
-                    if self.__graph.degree(second_vertex) == 1:  # found leaf
-                        self.__solve_cover_for_3_vertex_and_leaf(first_vertex, neighbor)
+                    # leaf or "double path"
+                    if self.__graph.degree(second_vertex) == 1 or other_neighbor == second_vertex:
+                        self.__solve_cover_for_3_vertex_and_stop_vertex(first_vertex, neighbor, second_vertex)
+                        if other_neighbor == second_vertex:
+                            print("found double path", first_vertex, neighbor, second_vertex)
+                            self.__graph.nodes[first_vertex]['color'] = 'red'
+                            self.__graph.nodes[second_vertex]['color'] = 'red'
                         continue
 
-                    if second_vertex == first_vertex:  # found "leaf cycle"
+                    # found "leaf cycle"
+                    if second_vertex == first_vertex:
+                        leaf_cycle = True
+                        self.__solve_cover_for_3_vertex_and_stop_vertex(first_vertex, neighbor, second_vertex)
                         continue
 
+                    # save to check if the second path leads to the same 3-vertex
                     if other_neighbor is None:
-                        other_neighbor = second_vertex  # save to check if the second path leads to the same 3-vertex
-                    elif other_neighbor == second_vertex:  # found "double path"
-                        continue
+                        other_neighbor = second_vertex
 
                     self.__solve_cover_for_3_3_bridge(parent_vertex, first_vertex, neighbor,
                                                       previous_vertex, second_vertex)
 
-                    for vertex, count in enumerate(self.__iteration_candidates):
-                        if count > 0:
-                            self.__graph.nodes[vertex]['color'] = 'green'
-
-                    #  draw_graph(self.__graph)
+                    if debug.PRINT_DEBUG:
+                        for vertex, count in enumerate(self.__iteration_candidates):
+                            if count > 0:
+                                self.__graph.nodes[vertex]['color'] = 'green'
+                        draw_graph(self.__graph)
 
                     if not queued[second_vertex]:
                         queue.append((previous_vertex, second_vertex))
                         queued[second_vertex] = True
 
     def __leaf_iteration(self, leaf):
-        log.debug('__leaf_iteration', leaf)
+        debug.print('__leaf_iteration', leaf)
         self.__iteration_candidates = [False for _ in self.__graph]
         starting_point_parent, starting_point = self.__find_next_3_vertex_or_leaf_with_cover(leaf)
         self.__bfs_cover_compute(starting_point_parent, starting_point)
@@ -185,7 +209,7 @@ class SubCubicVertexCoverP3:
             self.__global_candidates[vertex] += self.__iteration_candidates[vertex]
 
     def compute(self):
-        log.debug('compute')
+        debug.print('compute')
         self.__global_candidates = [0 for _ in self.__graph]
         self.__iteration_candidates = [False for _ in self.__graph]
         cover = []

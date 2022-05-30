@@ -10,8 +10,9 @@ def compute_greedy_cubic_vertex_cover(graph):
     visited = []
     for vertex in list(graph):
         if graph.degree(vertex) == 0:
-            cover.append(vertex)
-            graph.nodes[vertex][color_key] = 'green'
+            # cover.append(vertex)
+            # graph.nodes[vertex][color_key] = 'green'
+            pass
         elif vertex not in visited and graph.degree(vertex) == 1:
             cover.append(vertex)
             graph.nodes[vertex][color_key] = 'green'

@@ -89,29 +89,33 @@ if __name__ == '__main__':
     found = False
     graph = None
     while not found:
-        graph = generate_subcubic_graph_from_cubic_graph(20, 20, 30)
+        graph = generate_subcubic_graph_from_cubic_graph(100, 20, 30)
         # cover, candidates = compute_vertex_cover_p3_on_subcubic_graph(graph)
         for vertex in graph:
             if graph.degree(vertex) == 1:
                 found = True
                 break
     graph_greedy = graph.copy()
+    # draw_graph(graph)
 
     algorithm = SubCubicVertexCoverP3(graph)
     cover, candidates = algorithm.compute()
     for vertex, count in enumerate(candidates):
         if count > 0:
-            graph.nodes[vertex][color_key] = 'green'
-    #print(cover, candidates)
+            if color_key in graph.nodes[vertex] and graph.nodes[vertex][color_key] == 'red':
+                graph.nodes[vertex][color_key] = 'black'
+            else:
+                graph.nodes[vertex][color_key] = 'green'
+    # print(cover, candidates)
     print('my', cover, len(cover))
     draw_graph(graph)
 
     graph_greedy_backup = graph_greedy.copy()
     cover = compute_greedy_cubic_vertex_cover(graph_greedy)
     print('greedy', cover, len(cover))
-    for vertex in cover:
-        graph_greedy_backup.nodes[vertex][color_key] = 'green'
-    draw_graph(graph_greedy_backup)
+    # for vertex in cover:
+    #     graph_greedy_backup.nodes[vertex][color_key] = 'green'
+    # draw_graph(graph_greedy_backup)
 
     # print_degrees(graph)
     # pairs, intersections = count_intersections_bfs(graph)
