@@ -117,7 +117,7 @@ class SubCubicVertexCoverP3:
                     if path_length % 3 == 0:
                         self.__iteration_candidates[current_vertex] = True
                     break
-        if current_vertex == right_bridge_side and path_length == 2:
+        if current_vertex == right_bridge_side and path_length % 3 == 2:
             self.__iteration_candidates[right_center] = True
 
         # cover right star
@@ -171,10 +171,10 @@ class SubCubicVertexCoverP3:
                     # leaf or "double path"
                     if self.__graph.degree(second_vertex) == 1 or other_neighbor == second_vertex:
                         self.__solve_cover_for_3_vertex_and_stop_vertex(first_vertex, neighbor, second_vertex)
-                        if other_neighbor == second_vertex:
-                            print("found double path", first_vertex, neighbor, second_vertex)
-                            self.__graph.nodes[first_vertex]['color'] = 'red'
-                            self.__graph.nodes[second_vertex]['color'] = 'red'
+                        # if other_neighbor == second_vertex:
+                        #     print("found double path", first_vertex, neighbor, second_vertex)
+                        #     self.__graph.nodes[first_vertex]['color'] = 'red'
+                        #     self.__graph.nodes[second_vertex]['color'] = 'red'
                         continue
 
                     # found "leaf cycle"
